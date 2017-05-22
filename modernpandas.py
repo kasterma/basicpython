@@ -11,6 +11,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 import unittest
+import tempfile
+import os
+import logging
 
 class Modern1(unittest.TestCase):
     def test_ix_indexing(self):
@@ -90,3 +93,25 @@ class Modern1(unittest.TestCase):
         test_df3.loc[pd.IndexSlice[:, [20]],]
         test_df3.loc[pd.IndexSlice[:, 20], ]     # inconsistent?  Should drop the second level in the index
 
+
+class ChainingExample:
+    """Generate some test data for playing with chaining of methods"""
+    def __enter__(self):
+        self.fd, self.filename = tempfile.mkstemp()
+        dat = {'a': np.arange(20), 'b': np.arange(20, 40), 'date': pd.date_range("20170101", "20170120")}
+        df = pd.DataFrame(dat, index=pd.Index(np.arange(40,60), name="idx1"))
+        ff = os.fdopen(self.fd, "w")
+        df.to_csv(ff)
+        ff.close()
+        return self.filename
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.remove(self.filename)
+        return True
+
+
+class ChainingTests(unittest.TestCase):
+    def test_chain1(self):
+        with ChainingExample() as csv_filename:
+            df = pd.read_csv(csv_filename).set_index(['idx1'])
+            print(df)
