@@ -14,7 +14,7 @@ loggers:
     handlers: [console]
     propagate: False
   ChainingTests:
-    level: DEBUG
+    level: INFO
     handlers: [console]
     propagate: False
 root:

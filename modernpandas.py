@@ -210,5 +210,62 @@ class ChainingTests(unittest.TestCase):
         self.assertEquals(df2.date.dtype, np.dtype('<M8[ns]'))
         self.assertEquals(df1.shape, df2.shape)
 
-        print(df1)
-        print(df2)
+    def test_chain_fn(self):
+        """Exercise all fn in the daily flight pattern example"""
+        df1 = pd.DataFrame({'a': [1, 2, np.NaN], 'b': ["hi", np.NaN, "ho"]})
+        onlyA = df1.dropna(subset=[1], axis=1)
+
+        comp: pd.DataFrame = onlyA.loc[0:1] == [1, 2]   # helps with the mistaking type error highlighting in pycharm
+        self.assertTrue(all(comp))
+        self.assertTrue(all(np.isnan(onlyA.loc[2])))
+
+        self.assertTrue(pd.DataFrame({'a': [1.0], 'b': ['hi']}).equals(df1.dropna()))
+
+        df2 = pd.DataFrame({'a': [1, 2, np.NaN, np.NaN], 'b': ["hi", None, "ho", None]})
+        self.assertTrue(df1.equals(df2.dropna(how='all')))
+
+        df2.fillna(-1)
+        # both columns have two NaN
+        self.assertEquals((df2.fillna(-1) == -1.0).a.value_counts()[True], 2)
+        self.assertEquals((df2.fillna(-1) == -1.0).b.value_counts()[True], 2)
+        self.assertTrue(pd.Series([2, 2], index=['a', 'b']).equals(df2.isnull().sum()))
+
+        df2.a.map(np.isnan).value_counts()[True]  # replaced by isnull().sum() above, and only works for numeric cols
+
+        df2.apply(lambda row: row.isnull().sum(), axis=1)  # count of missing values per row
+        df2.apply(lambda col: col.isnull().sum())          # count of missing values per column
+        df2.isnull().sum(axis=1)  # count of missing values per row
+        df2.isnull().sum(axis=0)  # count of missing values per column
+
+        comp2: np.ndarray = df2.isin([1.0, 2, "ho"]).values.sum(axis=0) == [2, 1]
+        self.assertTrue(all(comp2))
+
+        df3 = pd.DataFrame({'a': [1, 1, 2, 2], 'b': [1, 2, 3, 4]})
+
+        df_a_sb = df3.groupby('a').b.sum()
+        self.assertTrue(df_a_sb.equals(pd.Series([3,7], index=[1, 2])))   # names ignored in comparison
+        pd.Series([3, 7], index=pd.Series([1, 2], name='a'), name='b')    # but can set the names if needed
+
+        df4 = pd.DataFrame({'a': [1, 2, 3, 4], 'b': [11, 22, 33, 44]},
+                           index=pd.MultiIndex.from_product([[1,2], ['aa', 'bb']], names=['idx1', 'idx2']))
+        df4.columns = pd.Series(['a', 'b'], name="idx_c")
+        df4.unstack(0)
+        df4.unstack(1)
+
+        df5 = pd.DataFrame([[1, 3], [2, 4], [11, 33], [22, 44]],
+                           columns=pd.Series([1, 2], name="idx1"),
+                           index=pd.MultiIndex.from_product([['a', 'b'], ['aa','bb']], names=['idx_c', 'idx2'])).T
+        self.assertTrue(df5.equals(df4.unstack(1)))
+        self.assertTrue(str(df5) == str(df4.unstack(1)))
+
+        df5.stack(0)
+
+        df6 = pd.DataFrame({'x': np.arange(100),
+                            'y': np.concatenate([np.repeat(1, 50), np.repeat(2, 50)]),
+                            'dat': pd.date_range("20170101", periods=100, freq='min')})
+        df6 = df6.set_index('dat')
+        df6.groupby([pd.TimeGrouper('H')]).sum()
+        df7 = df6.groupby(['y', pd.TimeGrouper('H')]).sum()
+
+        df6.x.rolling(10).sum()
+        

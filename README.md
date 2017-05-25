@@ -20,6 +20,10 @@ In creating functions for pd.DataFrame.pipe, start with a copy of the DataFrame.
 - .where/mask/Indexers accept Callables (0.18.1): In the next release you'll be able to pass a callable to the indexing methods, to be evaluated within the DataFrame's context (like .query, but with code instead of strings).
 
 
+- pd.DataFrame.equals, for comparing data frames (having NaN in the same place compares as true)
+
+- [dropna](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.dropna.html)
+
 ## logging
 
 logging.basicConfig needs to come before first call that uses it.  Otherwise will be ignored.
