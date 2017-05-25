@@ -115,28 +115,6 @@ def main11():
     la.setLevel(logging.INFO)
     la.info("hi")
 
-import logging
-logging.basicConfig(level=logging.INFO)
-logging.info("hi")
-INFO:root:hi
-logging.info("hi")
-INFO:root:hi
-la = logging.getLogger("ho")
-la.info("hi")
-INFO:ho:hi
-la.setLevel(logging.WARN)
-la.info("hi")
-
-import logging
-la = logging.getLogger("la")
-logging.info("hi")
-la.info("hi")
-la.setLevel(logging.INFO)
-la.info("hi")
-INFO:la:hi
-
-
-
 
 if __name__ == '__main__':
     #main9("logging_2.yaml")
