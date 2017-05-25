@@ -268,4 +268,3 @@ class ChainingTests(unittest.TestCase):
         df7 = df6.groupby(['y', pd.TimeGrouper('H')]).sum()
 
         df6.x.rolling(10).sum()
-        
