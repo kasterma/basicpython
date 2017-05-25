@@ -14,6 +14,17 @@ import unittest
 import tempfile
 import os
 import logging
+import logging.config
+import yaml
+
+from functools import wraps
+import re
+
+LOG_CONF_FILENAME = "logging_modernpandas.yaml"
+with open(LOG_CONF_FILENAME) as log_conf_file:
+    log_conf = yaml.load(log_conf_file)
+logging.config.dictConfig(log_conf)
+
 
 class Modern1(unittest.TestCase):
     def test_ix_indexing(self):
@@ -96,8 +107,12 @@ class Modern1(unittest.TestCase):
 
 class ChainingExample:
     """Generate some test data for playing with chaining of methods"""
+    def __init__(self):
+        self.log = logging.getLogger(self.__class__.__name__)
+
     def __enter__(self):
         self.fd, self.filename = tempfile.mkstemp()
+        self.log.info("Creating csv file: %s", self.filename)
         dat = {'a': np.arange(20), 'b': np.arange(20, 40), 'date': pd.date_range("20170101", "20170120")}
         df = pd.DataFrame(dat, index=pd.Index(np.arange(40,60), name="idx1"))
         ff = os.fdopen(self.fd, "w")
@@ -110,8 +125,90 @@ class ChainingExample:
         return True
 
 
+def log_shape(log: logging.Logger, level: int = logging.DEBUG):
+    """Create wrapper function of logging the shapes of (first) input and output of a function.
+    
+    The log output resembles a type specification of the function
+    
+        f: (20, 3) -> (20, 3)
+    """
+    def decor(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            result = func(*args, **kwargs)
+            log.log(level, "%s: %s -> %s" % (func.__name__, args[0].shape, result.shape))
+            return result
+        return wrapper
+    return decor
+
+
+def log_dtypes(log: logging.Logger, level: int = logging.DEBUG, *, full: bool =True):
+    """Create wrapper function for logging the dtypes of a function.
+    
+    If full is True give a log output resembling a type of the function
+    
+        f: (a : int64, b : int64, date : object) -> (a : int64, b : int64, date : datetime64[ns])
+        
+    otherwise give the name of the function and the repr of df.dtypes of the output.
+    
+        f, a                int64
+        b                int64
+        date    datetime64[ns]
+        dtype: object
+    """
+    def rep_dtypes(df):
+        """Cleaner string representation of the dtypes of a dataframe for logging"""
+        return "(" + re.sub(", dtype.*", "", re.sub(r"  +", ": ", str(df.dtypes)).replace("\n", ", ")) + ")"
+
+    def decor(func):
+        if full:
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                result = func(*args, **kwargs)
+                log.log(level, "%s: %s -> %s" % (func.__name__, rep_dtypes(args[0]), rep_dtypes(result)))
+                return result
+        else:
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                result = func(*args, **kwargs)
+                log.log(level, "%s, %s" % (func.__name__, result.dtypes))
+                return result
+        return wrapper
+    return decor
+
+
 class ChainingTests(unittest.TestCase):
+    log = logging.getLogger("ChainingTests")
+
+    def test_where_callable(self):
+        df = pd.DataFrame(np.arange(10).reshape(-1, 2), columns=['A', 'B'])
+        m = df % 3 == 0
+        df2 = df.where(m, -df-2)
+        df3 = df.where(lambda df: df % 3 == 0, -df-2)
+        self.assertTrue(all(df2 == df3))
+
     def test_chain1(self):
         with ChainingExample() as csv_filename:
-            df = pd.read_csv(csv_filename).set_index(['idx1'])
-            print(df)
+            df1 = pd.read_csv(csv_filename).set_index(['idx1'])
+
+        self.assertEquals(df1.dtypes['date'], np.dtype("O"))
+
+        @log_shape(self.log)
+        @log_dtypes(self.log, full=False)
+        @log_dtypes(self.log)
+        def date_to_date(df: pd.DataFrame, col):
+            df_rv = df.copy()
+            df_rv[col] = pd.to_datetime(df[col])
+            return df_rv
+
+        df2 = df1.pipe(date_to_date, 'date')
+
+        # check state before to check date_to_date didn't change
+        self.assertEquals(df1.dtypes['date'], np.dtype("O"))
+
+        self.assertEquals(df2.dtypes['date'], np.dtype('<M8[ns]'))
+        self.assertEquals(df2.date.dtype, np.dtype('<M8[ns]'))
+        self.assertEquals(df1.shape, df2.shape)
+
+        print(df1)
+        print(df2)
