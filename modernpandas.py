@@ -20,6 +20,9 @@ import yaml
 from functools import wraps
 import re
 
+import random
+import glob
+
 LOG_CONF_FILENAME = "logging_modernpandas.yaml"
 with open(LOG_CONF_FILENAME) as log_conf_file:
     log_conf = yaml.load(log_conf_file)
@@ -268,3 +271,40 @@ class ChainingTests(unittest.TestCase):
         df7 = df6.groupby(['y', pd.TimeGrouper('H')]).sum()
 
         df6.x.rolling(10).sum()
+
+
+class IndexingTests(unittest.TestCase):
+    log = logging.getLogger("IndexingTests")
+
+    def test_reset_index(self):
+        """Reset index is used in an example.
+        
+        And in this context reminding myself of some MultiIndex operations as well."""
+
+        # reminder on multi index in columns
+        df1 = pd.DataFrame([[1, 3], [2, 4], [11, 33], [22, 44]]).T
+        df1.index = pd.Series([1, 2], name="idx1")
+        df1.columns = pd.MultiIndex.from_product([['a', 'b'], ['aa', 'bb']], names=['idx_c', 'idx2'])
+
+        # same data frame in single command
+        df2 = pd.DataFrame([[1, 2, 11, 22], [3, 4, 33, 44]],
+                           index=pd.Series([1, 2], name="idx1"),
+                           columns=pd.MultiIndex.from_product([['a', 'b'], ['aa', 'bb']], names=['idx_c', 'idx2']))
+
+        df2.loc[:, pd.IndexSlice[:, 'aa']]  # getting all info using the second level of the column index out of it
+
+        df2.T.reset_index().set_index(['idx_c', 'idx2'])  # all together a nop
+        self.assertTrue(df2.T.equals(df2.T.reset_index().set_index(['idx_c', 'idx2'])))
+        df2.T.reset_index(0)   # pull out first index level (idx_c)
+        df2.T.reset_index(1)   # pull out second index level (idx2)
+
+    def test_set_operations(self):
+        df2 = pd.DataFrame([[1, 2, 11, 22], [3, 4, 33, 44]],
+                           index=pd.Series(['one', 'two'], name="idx1"),
+                           columns=pd.MultiIndex.from_product([['a', 'b'], ['aa', 'bb']], names=['idx_c', 'idx2']))
+
+        df2.columns.levels[1]  # ['aa', 'bb']
+        df2.columns.levels[0] & df2.columns.levels[1]  # empty
+        df2.columns.levels[0] | df2.columns.levels[1]  #['a', 'aa', 'b', 'bb']
+        df2.T.one  # index comes along
+
