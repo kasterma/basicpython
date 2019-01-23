@@ -9,6 +9,8 @@ import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.neighbors import KernelDensity
+
 
 def random_string(length=10):
     return "".join(random.choices(string.ascii_letters, k=length))
@@ -90,8 +92,27 @@ cts = datf.found.value_counts()
 
 bins = np.histogram(cts, bins=10)
 
-### cts.hist()
+
+# hist of search sizes
+
+### cts.hist()   # wrong plot, plots the cts not the indices
 plt.hist(datf.values, bins=30)
 m = np.mean(datf.values)
 plt.axvline(x=m, color='red')
+plt.show()
+
+# kernel density approx of search sizes
+
+kd = KernelDensity()
+kd.fit(datf.values)
+dd = kd.sample(10000)
+plt.hist(dd, bins=30)
+plt.show()
+np.mean(dd)
+np.std(dd)
+np.std(datf.values)
+
+xs = np.linspace(0, 3000, num=1000)
+dens_dat = np.exp(kd.score_samples(np.expand_dims(xs, 1)))
+plt.plot(xs, dens_dat)
 plt.show()
