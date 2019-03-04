@@ -9,6 +9,10 @@ handlers:
     formatter: simple
     stream: ext://sys.stdout
 loggers:
+  ChunkExample:
+    level: WARN
+    handlers: [console]
+    propagate: False
   ChainingExample:
     level: INFO
     handlers: [console]

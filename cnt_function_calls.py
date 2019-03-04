@@ -23,6 +23,7 @@ def f(x):
 def cnt(f):
     @wraps(f)
     def wrap(*args, **kwargs):
+        pass
 
 from collections import defaultdict
 import weakref

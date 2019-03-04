@@ -24,6 +24,8 @@ In creating functions for pd.DataFrame.pipe, start with a copy of the DataFrame.
 
 - [dropna](http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.dropna.html)
 
+- index operations: & intersection, | union, and ^ symmetric difference
+
 ## logging
 
 logging.basicConfig needs to come before first call that uses it.  Otherwise will be ignored.

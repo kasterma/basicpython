@@ -309,7 +309,6 @@ class IndexingTests(unittest.TestCase):
         df2.T.one  # index comes along
 
 
-
 class ChunkExample:
     """Generate some test data for playing with a collection of chunks from different files"""
 
@@ -402,3 +401,4 @@ class PerformanceTests(unittest.TestCase):
         pd.concat([a12mi1, a3.reindex(mi1, level='three')], axis=1)
 
         b12 = pd.concat([a1.reindex(mi1.droplevel('three').unique().set_names(['one', 'two']), level='one'), a2.reindex(mi1.droplevel(2), level='two')], axis=1)
+
