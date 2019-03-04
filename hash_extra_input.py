@@ -116,3 +116,14 @@ xs = np.linspace(0, 3000, num=1000)
 dens_dat = np.exp(kd.score_samples(np.expand_dims(xs, 1)))
 plt.plot(xs, dens_dat)
 plt.show()
+
+# quick play with kernel density fn
+
+kd2 = KernelDensity(bandwidth=0.3, kernel='tophat')
+kd2.kernel
+dat_train = np.expand_dims(np.asarray([1, 1, 1.5, 2, 2, 2]), 1)
+kd2.fit(dat_train)
+xs = np.linspace(0, 4, num=100)
+ys = np.exp(kd2.score_samples(np.expand_dims(xs, 1)))
+plt.plot(xs, ys)
+plt.show()

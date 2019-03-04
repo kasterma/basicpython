@@ -20,6 +20,9 @@ import yaml
 from functools import wraps
 import re
 
+import random
+import glob
+
 LOG_CONF_FILENAME = "logging_modernpandas.yaml"
 with open(LOG_CONF_FILENAME) as log_conf_file:
     log_conf = yaml.load(log_conf_file)
@@ -268,3 +271,134 @@ class ChainingTests(unittest.TestCase):
         df7 = df6.groupby(['y', pd.TimeGrouper('H')]).sum()
 
         df6.x.rolling(10).sum()
+
+
+class IndexingTests(unittest.TestCase):
+    log = logging.getLogger("IndexingTests")
+
+    def test_reset_index(self):
+        """Reset index is used in an example.
+        
+        And in this context reminding myself of some MultiIndex operations as well."""
+
+        # reminder on multi index in columns
+        df1 = pd.DataFrame([[1, 3], [2, 4], [11, 33], [22, 44]]).T
+        df1.index = pd.Series([1, 2], name="idx1")
+        df1.columns = pd.MultiIndex.from_product([['a', 'b'], ['aa', 'bb']], names=['idx_c', 'idx2'])
+
+        # same data frame in single command
+        df2 = pd.DataFrame([[1, 2, 11, 22], [3, 4, 33, 44]],
+                           index=pd.Series([1, 2], name="idx1"),
+                           columns=pd.MultiIndex.from_product([['a', 'b'], ['aa', 'bb']], names=['idx_c', 'idx2']))
+
+        df2.loc[:, pd.IndexSlice[:, 'aa']]  # getting all info using the second level of the column index out of it
+
+        df2.T.reset_index().set_index(['idx_c', 'idx2'])  # all together a nop
+        self.assertTrue(df2.T.equals(df2.T.reset_index().set_index(['idx_c', 'idx2'])))
+        df2.T.reset_index(0)   # pull out first index level (idx_c)
+        df2.T.reset_index(1)   # pull out second index level (idx2)
+
+    def test_set_operations(self):
+        df2 = pd.DataFrame([[1, 2, 11, 22], [3, 4, 33, 44]],
+                           index=pd.Series(['one', 'two'], name="idx1"),
+                           columns=pd.MultiIndex.from_product([['a', 'b'], ['aa', 'bb']], names=['idx_c', 'idx2']))
+
+        df2.columns.levels[1]  # ['aa', 'bb']
+        df2.columns.levels[0] & df2.columns.levels[1]  # empty
+        df2.columns.levels[0] | df2.columns.levels[1]  #['a', 'aa', 'b', 'bb']
+        df2.T.one  # index comes along
+
+
+
+class ChunkExample:
+    """Generate some test data for playing with a collection of chunks from different files"""
+
+    def __init__(self, name_fragment, ct, *, test_at=None):
+        """Initialize the creation of a ct csv files with name_fragment in their name.
+
+        The parameter test_at is for testing, leave at None for normal use, set to a value less than ct to create the
+        file just before testing for its existence.
+        """
+        self.log = logging.getLogger(self.__class__.__name__)
+        self.name_fragment = name_fragment
+        self.ct = ct
+        self.test_at = test_at
+
+    def __enter__(self):
+        self.random_fragment = random.randint(10_000, 100_000)
+        self.filenames = []
+        for idx in range(self.ct):
+            filename = f"/tmp/{self.name_fragment}-{self.random_fragment}-{idx}.csv"
+            self.log.info("Creating csv file: %s", filename)
+            dat = {'a': np.arange(20*idx, 20*(1+idx)),
+                   'b': np.arange(20, 40),
+                   'date': pd.date_range("20170101", "20170120")}
+            df = pd.DataFrame(dat, index=pd.Index(np.arange(40+20*idx, 40+20*(1+idx)), name="idx1"))
+
+            if idx == self.test_at:  # create the file for testing the error code following directly below
+                df.to_csv(filename)
+            if os.path.isfile(filename):
+                self.log.error(f"Csv file already exists: {filename}")
+                self.remove_files()
+                raise Exception("Attempt at overwriting file")
+
+            df.to_csv(filename)
+            self.filenames.append(filename)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Cleanup.
+
+        Since there are no expected exceptions that we might want to capture we pass all thrown exceptions on.
+        """
+        self.remove_files()
+        return False
+
+    def remove_files(self):
+        for fname in self.filenames:
+            try:
+                os.remove(fname)
+            except FileNotFoundError as e:
+                self.log.warning(f"Trying to remove file {fname} but file is not found: {str(e)}")
+
+
+class PerformanceTests(unittest.TestCase):
+    log = logging.getLogger("PerformanceTests")
+
+    def test_chunks(self):
+        with ChunkExample("test_frag", 10) as ce:
+            files = glob.glob(f"/tmp/{ce.name_fragment}*")   # Note: these are not in order
+            self.log.info(f"Reader {files}")
+            dats = [pd.read_csv(fname, index_col=0) for fname in files]
+
+        dat: pd.DataFrame = pd.concat(dats)
+        dat = dat.sort_index()
+
+        # test dealing with missing files in the context manager
+        with ChunkExample("test_frag", 10) as ce:
+            for ff in ce.filenames:
+                self.log.info(f"Removing {ff}")
+                os.remove(ff)
+
+        new_index = pd.MultiIndex.from_product([dat.index, dat.index], names=['aa', 'bb'])
+
+        xx = pd.concat(
+            [dat.add_prefix("aa").reindex(new_index, level='aa'), dat.add_prefix("bb").reindex(new_index, level="bb")],
+            axis=1)   # key is this axis = 1 / if axis = 0 (the default) just put one frame under the other
+        self.assertEquals(xx.shape, (40_000, 6))
+
+        mi1 = pd.MultiIndex.from_product([[1, 2, 3], [2, 3, 4], [4, 5, 6]], names=['one', 'two', 'three'])
+        a1 = pd.DataFrame({'a1': [11, 22, 33]}, index=[1, 2, 3])
+        a2 = pd.DataFrame({'a2': [22, 33, 44]}, index=[2, 3, 4])
+        a3 = pd.DataFrame({'a3': [44, 55, 66]}, index=[4, 5, 6])
+        a12 = pd.concat([a1.reindex(mi1.droplevel(2), level='one'),
+                         a2.reindex(mi1.droplevel(2), level='two')],
+                        axis='columns')
+        #a123 = pd.concat([a12, a3.reindex(mi1, level=2)], axis=1)
+
+        io1 = pd.DataFrame(index=mi1)
+        aaa = pd.concat([a12, io1.reset_index(level=2)], axis=1)
+        a12mi1 = aaa.set_index("three", append=True)
+        pd.concat([a12mi1, a3.reindex(mi1, level='three')], axis=1)
+
+        b12 = pd.concat([a1.reindex(mi1.droplevel('three').unique().set_names(['one', 'two']), level='one'), a2.reindex(mi1.droplevel(2), level='two')], axis=1)
