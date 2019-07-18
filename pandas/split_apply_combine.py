@@ -59,3 +59,10 @@ s.groupby(level=0).sum()
 
 index = pd.date_range('10/1/1999', periods=1100)
 ts = pd.Series(np.random.normal(0.5, 2, 1100), index)
+
+# missing  values
+
+dfm_1 = pd.DataFrame({'a': [1, 1, 2, np.nan, np.nan], 'b': [1, np.nan, 2, np.nan, 2], 'c': np.arange(5), 'd': [1, np.nan, 2, 2, 2]})
+dfm_1.groupby('a').agg('count')
+dfm_1.fillna({'a': -999})
+dfm_1.fillna({'a': -999}).groupby('a').agg(['count', 'size'])
