@@ -2,9 +2,21 @@
 # https://leetcode.com/problems/number-of-valid-words-for-each-puzzle/
 
 from typing import List
+import string
+from collections import defaultdict
+from itertools import chain, combinations
 
 
-class Solution:
+class Solution1:
+    """using hint to look at bitmasks"""
+    @staticmethod
+    def str2bm(s):
+        return int("".join('1' if l in s else '0' for l in string.ascii_lowercase), 2)
+
+    @staticmethod
+    def subsbm(a, b):
+        """a is subset of b seen as bitmask"""
+        return not(a & ~ b)
 
     @staticmethod
     def _diff(w, p):
@@ -23,22 +35,65 @@ class Solution:
     def _ww(wordsets, puzzle):
         return [Solution._word_puzzle(w, puzzle[0], set(puzzle)) for w in wordsets]
 
-    def findNumOfValidWords(self, words: List[str], puzzles: List[str]) -> List[int]:
-        wordsets = Solution._all_sets(words)
+    @staticmethod
+    def _prepare(words, puzzles):
+        return [Solution.str2bm(w) for w in words], [(Solution.str2bm(p[0]), Solution.str2bm(p)) for p in puzzles]
+
+    @staticmethod
+    def _counts(wordbm, puzzlebm):
         return [
-            sum(Solution._ww(wordsets, puzzle))
-            for puzzle in puzzles
+            sum(True for w in wordbm if l & w and Solution.subsbm(w, p))
+            for l, p in puzzlebm
         ]
+
+    def findNumOfValidWords(self, words: List[str], puzzles: List[str]) -> List[int]:
+        # word prep   #words
+        # puzzle prep    #puzzle
+        # mix and match  #words * # puzzle
+        wordbm, puzzbml = Solution._prepare(words, puzzles)
+        return Solution._counts(wordbm, puzzbml)
+
+class Solution:
+    """using the idea that was used with bitmasks, but without the bitmasks"""
+    @staticmethod
+    def normalize(s):
+        """standard order, every letter only once"""
+        return "".join(l for l in string.ascii_lowercase if l in s)
+
+    @staticmethod
+    def _prepare(words):
+        d = defaultdict(int)
+        for w in words:
+            d[Solution.normalize(w)] += 1
+        return d
+
+    @staticmethod
+    def powerset_withfirst(puzzle):
+        "from itertools recipe adjusted"
+        f = puzzle[0]
+        s = list(set(puzzle))
+        return [Solution.normalize("".join(p))
+                for p in chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+                if f in p]
+
+    @staticmethod
+    def _counts(wordcts, puzzle):
+        return sum(wordcts.get(nw, 0) for nw in Solution.powerset_withfirst(puzzle))
+
+    def findNumOfValidWords(self, words: List[str], puzzles: List[str]) -> List[int]:
+        wordcts = Solution._prepare(words)
+        return [Solution._counts(wordcts, puzzle) for puzzle in puzzles]
+
 
 
 # noinspection PyProtectedMember
-def test_word_puzzle():
-    assert Solution._word_puzzle(set("test"), "e", set("set"))
-    assert not Solution._word_puzzle(set("test"), "a", set("set"))
-    assert not Solution._word_puzzle(set("test"), "e", set("et"))
-    assert Solution._word_puzzle(
-        set("test"), "s", set("sdlfjaslfdjdlhgkdsahfkefdjksjsteettt")
-    )
+# def test_word_puzzle():
+#     assert Solution._word_puzzle(set("test"), "e", set("set"))
+#     assert not Solution._word_puzzle(set("test"), "a", set("set"))
+#     assert not Solution._word_puzzle(set("test"), "e", set("et"))
+#     assert Solution._word_puzzle(
+#         set("test"), "s", set("sdlfjaslfdjdlhgkdsahfkefdjksjsteettt")
+#     )
 
 
 def test_find_example():
@@ -57,4 +112,22 @@ def test_speed1(benchmark):
     def solution_for(ct):
         Solution().findNumOfValidWords(slow_words[:ct], slow_puzzles[:ct])
 
-    result = benchmark(solution_for, 1000)
+    result = benchmark(solution_for, 10000)
+
+
+def iterate_masks(x):
+    """key ingredient for bitmask solution from a discussion on leetcode"""
+    y = x
+    while y:
+        print(f"{y:b}")
+        y = (y - 1) & x
+
+
+# for profiling, run without the test stuff around it
+if __name__ == "__main__":
+    from slowtestcase import slow_puzzles, slow_words
+
+    def solution_for(ct):
+        Solution().findNumOfValidWords(slow_words[:ct], slow_puzzles[:ct])
+
+    solution_for(100000)
