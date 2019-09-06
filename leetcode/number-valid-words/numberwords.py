@@ -5,14 +5,28 @@ from typing import List
 
 
 class Solution:
+
+    @staticmethod
+    def _diff(w, p):
+        """separate out for profiling"""
+        return w.difference(p)
+
     @staticmethod
     def _word_puzzle(word: set, puzzle_first: str, puzzle: set) -> bool:
-        return puzzle_first in word and not word.difference(puzzle)
+        return puzzle_first in word and word.issubset(puzzle)
+
+    @staticmethod
+    def _all_sets(words):
+        return [set(w) for w in words]
+
+    @staticmethod
+    def _ww(wordsets, puzzle):
+        return [Solution._word_puzzle(w, puzzle[0], set(puzzle)) for w in wordsets]
 
     def findNumOfValidWords(self, words: List[str], puzzles: List[str]) -> List[int]:
-        wordsets = [set(w) for w in words]
+        wordsets = Solution._all_sets(words)
         return [
-            sum(self._word_puzzle(w, puzzle[0], set(puzzle)) for w in wordsets)
+            sum(Solution._ww(wordsets, puzzle))
             for puzzle in puzzles
         ]
 
