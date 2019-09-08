@@ -266,12 +266,12 @@ def test_lfu3():
             c.get(*arg)
 
 
-def run_test(ops, args, expected=None, verbose=True):
+def run_test(ops, args, expected=None, verbose=True, which_flu=0):
     for idx, (op, arg) in enumerate(zip(ops, args)):
         if verbose:
             print("  instruction:", op, arg, expected[idx] if expected else None)
         if op == "LFUCache":
-            c = LFUCache(*arg)
+            c = LFUCache(*arg) if which_flu == 0 else LFUCache1(*arg)
         elif op == "put":
             c.put(*arg)
         elif op == "get":
@@ -287,6 +287,20 @@ def test_lfu4():
     run_test(["LFUCache", "put", "put", "put", "put", "get", "get"],
              [[2, True], [2, 1], [1, 1], [2, 3], [4, 1], [1], [2]],
              [None, None, None, None, None, -1, 3])
+
+
+def test_lfu_0(benchmark):
+    """test the speed of submitted with DLL"""
+    from slow_testcase import ops, args
+
+    benchmark(run_test, ops, args, None, False)
+
+def test_lfu_1(benchmark):
+    """test the speed of submitted with DLL"""
+    from slow_testcase import ops, args
+
+    benchmark(run_test, ops, args, None, False, 1)
+
 
 
 class Timer:
