@@ -123,6 +123,31 @@ def iterate_masks(x):
         y = (y - 1) & x
 
 
+def iterate2(p):
+    """second iteration from a solution on leetcode"""
+    n = ord('a')
+    a = [1 << (ord(p[0]) - n)]
+    for c in p[1:]:
+        t = 1 << (ord(c) - n)
+        a += [x | t for x in a]
+    return a
+
+
+class Solution:
+    def findNumOfValidWords(self, words: List[str], puzzles: List[str]) -> List[int]:
+        count = collections.Counter(frozenset(w) for w in words)
+        # print (count)
+        res = []
+        for p in puzzles:
+            cur = 0
+            for k in range(7):
+                for c in itertools.combinations(p[1:], k):
+                    cur += count[frozenset(tuple(p[0]) + c)]
+
+            res.append(cur)
+        return res
+
+
 # for profiling, run without the test stuff around it
 if __name__ == "__main__":
     from slowtestcase import slow_puzzles, slow_words
