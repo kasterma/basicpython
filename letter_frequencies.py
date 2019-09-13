@@ -59,10 +59,13 @@ def mixin_freqs(fs, freqs, ct):
 import random
 fs = np.array(freqs)
 idxs = []
-for i in range(10_000):
-    print(meas((100 * fs) / sum(fs)))
+vals = []
+for i in range(200):
+    vals.append(meas((100 * fs) / sum(fs)))
     idx = random.randrange(0, 26)
     idxs.append(idx)
     fs = mixin_freqs(fs, freqs, idx)
 print(meas((100 * fs) / sum(fs)))
-barplot(fs)
+
+plt.plot(vals)
+plt.title("Showing speed of convergence to uniform")
