@@ -1,22 +1,10 @@
 # https://leetcode.com/problems/maximum-equal-frequency/
+#
+# Notes:
+# 1. The number of resubmissions needed corresponds exactly to the number of special cases not considered
 
 from collections import Counter
 from typing import List
-
-
-# def sol2(self, c: Counter) -> bool:
-#     val_set = set(c.values())
-#     if len(val_set) == 2:
-#         a, b = list(val_set)
-#         if abs(a - b) == 1:
-#             ct_a = len([v for v in c.values() if v == a])
-#             ct_tot = len(c)
-#             if a + 1 == b and ct_a + 1 == ct_tot:
-#                 return True
-#             elif b + 1 == a and ct_a == 1:
-#                 return True
-#
-#     return False
 
 class Solution:
     def __init__(self, debug=False):
@@ -28,7 +16,7 @@ class Solution:
         c_vals = Counter(c.values())
         if self.debug:
             print(f"c_vals {c_vals}")
-        if len(c_vals) == 2:
+        if len(c_vals) == 2:  # standard case to look for, two different counts appear
             a, b = c_vals.keys()
             if a > b:
                 a, b = b, a
@@ -38,6 +26,10 @@ class Solution:
                 if self.debug:
                     print("True")
                 return True
+        elif len(c_vals) == 1 and list(c.values())[0] == 1:  # every number occurs once
+            return True
+        elif len(c) == 1:  # only one number appears
+            return True
 
         if self.debug:
             print("False")
@@ -56,7 +48,6 @@ class Solution:
 
 def test1():
     nums = [2, 2, 1, 1, 5, 3, 3, 5]
-
     assert Solution(True).maxEqualFreq(nums) == 7
 
 def test2():
@@ -71,3 +62,17 @@ def test4():
     nums = [10, 2, 8, 9, 3, 8, 1, 5, 2, 3, 7, 6]
     assert Solution(True).maxEqualFreq(nums) == 8
 
+def test5():
+    # failed test on initial submission
+    nums = [1,2]
+    assert Solution(True).maxEqualFreq(nums) == 2
+
+def test6():
+    # failed test on second submission
+    nums = [1,1]
+    assert Solution(True).maxEqualFreq(nums) == 2
+
+def test7():
+    # failed test on third submission
+    nums = [1,2,3,4,5,6,7,8,9]
+    assert Solution(True).maxEqualFreq(nums) == 9
