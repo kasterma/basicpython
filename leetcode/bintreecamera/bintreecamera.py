@@ -40,16 +40,16 @@ class Solution:
         rv = self.minCameraCover_h(root)
         return rv[0] if rv[0] > 0 else 1
 
-    def minCameraCover_h(self, root) -> (int, bool):
+    def minCameraCover_h(self, root) -> (int, int):
         "Returns count needed for tree below root, and if below root is already monitored"
         if root is None:
-            return (0, True)
+            return (0, 1)
         rv1 = self.minCameraCover_h(root.left)
         rv2 = self.minCameraCover_h(root.right)
-        if rv1[1] and rv2[1]:
-            return (rv1[0] + rv2[0], False)
+        if rv1[1] > 0 and rv2[1] > 0:
+            return (rv1[0] + rv2[0], max(rv1[1], rv2[1]) - 1)
         else:
-            return (rv1[0] + rv2[0] + 1, True)
+            return (rv1[0] + rv2[0] + 1, 2)
 
 
 def test1():
@@ -76,3 +76,9 @@ def test4():
     t4 = TreeNode.createTree(in4)
     print(repr(t4))
     assert Solution(True).minCameraCover(t4) == 1
+
+def test5():
+    in5 = [0,0,None,None,0,0,None,None,0,0]
+    t5 = TreeNode.createTree(in5)
+    print(repr(t5))
+    assert Solution(True).minCameraCover(t5) == 2
