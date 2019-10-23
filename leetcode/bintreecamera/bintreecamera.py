@@ -38,7 +38,7 @@ class Solution:
 
     def minCameraCover(self, root: TreeNode) -> int:
         rv = self.minCameraCover_h(root)
-        return rv[0]
+        return rv[0] if rv[0] > 0 else 1
 
     def minCameraCover_h(self, root) -> (int, bool):
         "Returns count needed for tree below root, and if below root is already monitored"
@@ -70,3 +70,9 @@ def test3():
     t3 = TreeNode.createTree(in3)
     print(repr(t3))
     assert Solution(True).minCameraCover(t3) == 2
+
+def test4():
+    in4 = [0]
+    t4 = TreeNode.createTree(in4)
+    print(repr(t4))
+    assert Solution(True).minCameraCover(t4) == 1
