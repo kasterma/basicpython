@@ -7,8 +7,11 @@ row = namedtuple("row", ["loc", "idx"])
 class Solution:
     def __init__(self, debug=False):
         self.debug = debug
+        self.op_ct = 0
 
     def leastBricks(self, wall: List[List[int]]) -> int:
+        # O(length of layer * layers of brick)
+        # touch every brick as many times as it is long
         reached = {idx: row(wall[idx][0], 1) for idx in range(len(wall))}
         line_location = 1
         min_val = len(wall)
@@ -35,6 +38,7 @@ class Solution:
 
         if self.debug:
             print(f"min_loc {min_loc}")
+        print(f"op_ct {self.op_ct}")
         return min_val
 
     def looploop(self, line_location, missed_ct, next_loc, reached, wall):
@@ -43,6 +47,7 @@ class Solution:
         return missed_ct, next_loc
 
     def innerloop(self, idx, line_location, missed_ct, next_loc, r, reached, wall):
+        self.op_ct += 1
         if r.loc == line_location:
             nn = r.loc + wall[idx][r.idx]
             reached[idx] = row(nn, r.idx + 1)

@@ -5,17 +5,22 @@ from typing import List
 class Solution:
     def __init__(self, debug=False):
         self.debug = debug
+        self.op_ct = 0
 
     def leastBricks(self, wall: List[List[int]]) -> int:
+        # O(layers of brick * stones in layer)
+        # touch every brick once
         splits = defaultdict(int)
         wall_end = sum(wall[0])
         for layer in wall:
             ct = 0
             for brick in layer:
                 ct += brick
+                self.op_ct += 1
                 if ct < wall_end:
                     splits[ct] += 1
 
+        print(f"op_ct {self.op_ct}")
         if splits:
             m = max(splits.values())
             return len(wall) - m
