@@ -5,8 +5,131 @@ from typing import List
 
 snake = namedtuple("snake", ['tailx', 'taily', 'headx', 'heady'])
 
-
 class Solution:
+    def minimumMoves(self, grid: List[List[int]]) -> int:
+        n = len(grid)  # Note: grid is square
+        s = (0, 0, 1, 0)
+        start_pos = (0, s)
+        seen = set(start_pos)
+        h = deque(maxlen=n * n)
+        h.append(start_pos)
+        while h:
+            steps, (tx, ty, hx, hy) = h.popleft()  # pop from beginning (*)
+            if tx == n - 2 and hy == hx == ty == n - 1:
+                return steps
+
+            steps += 1
+
+            def push_new(new_s):
+                new_item = (steps, new_s)
+                if not new_s in seen:
+                    h.append(new_item)  # add at end (with (*) above ensures that first solution found is shortest)
+                    seen.add(new_s)
+
+            try:
+                if grid[hy + 1][hx] == grid[ty + 1][tx] == 0: push_new((tx, ty + 1, hx, hy + 1))
+            except IndexError:
+                pass
+            try:
+                if grid[hy][hx + 1] == grid[ty][tx + 1] == 0: push_new((tx + 1, ty, hx + 1, hy))
+            except IndexError:
+                pass
+            try:
+                if hx > tx and grid[hy + 1][hx] == grid[ty + 1][tx] == 0: push_new((tx, ty, tx, ty + 1))
+            except IndexError:
+                pass
+            try:
+                if hy > ty and grid[hy][hx + 1] == grid[ty][tx + 1] == 0: push_new((tx, ty, tx + 1, ty))
+            except IndexError:
+                pass
+
+        return -1
+
+class Solution4:
+    def minimumMoves(self, grid: List[List[int]]) -> int:
+        cur,cnt, n, seen = [(0,0,0)], 0 , len(grid),set([(0,0,0)])      #(tail_row,tail_col,horizontal_or_verticle)
+        while cur and (n-1,n-2,0) not in cur:
+            cnt,tmp = cnt+1, []
+            for x,y,dx in cur:
+                if dx==0:
+                    if y+2 < n and grid[x][y+2] == 0: tmp += [(x,y+1,dx)]
+                    if x+1 < n and (grid[x+1][y] + grid[x+1][y+1]) == 0: tmp += [(x,y,1),(x+1,y,0)]
+                else:
+                    if x+2 < n and grid[x+2][y] == 0: tmp += [(x+1,y,dx)]
+                    if y+1 < n and (grid[x][y+1] + grid[x+1][y+1]) == 0: tmp += [(x,y,0),(x,y+1,1)]
+            cur = set(tmp) - seen
+            seen |= cur
+        return cnt if cur else -1
+
+
+class Solution2:
+    def _moveright(self, s):
+        return (s[0] + 1, s[1], s[2] + 1, s[3])
+
+    def _can_right(self, s, grid):
+        try:
+            return grid[s[3]][s[2] + 1] == grid[s[1]][s[0] + 1] == 0
+        except IndexError:
+            return False
+
+    def _movedown(self, s):
+        return (s[0], s[1] + 1, s[2], s[3] + 1)
+
+    def _can_down(self, s, grid):
+        try:
+            return grid[s[3] + 1][s[2]] == grid[s[1] + 1][s[0]] == 0
+        except IndexError:
+            return False
+
+    def _rotate(self, s):
+        return (s[0], s[1], s[0], s[1] + 1)
+
+    def _can_rotate(self, s, grid):
+        try:
+            return s[2] > s[0] and grid[s[3] + 1][s[2]] == grid[s[1] + 1][s[0]] == 0
+        except IndexError:
+            return False
+
+    def _rotate_anti(self, s):
+        return (s[0], s[1], s[0] + 1, s[1])
+
+    def _can_rotate_anti(self, s, grid):
+        try:
+            return s[3] > s[1] and grid[s[3]][s[2] + 1] == grid[s[1]][s[0] + 1] == 0
+        except IndexError:
+            return False
+
+    def _solved(self, s, n):
+        return s[0] == n - 2 and s[3] == s[2] == s[1] == n - 1
+
+    def minimumMoves(self, grid: List[List[int]]) -> int:
+        n = len(grid)  # Note: grid is square
+        s = (0, 0, 1, 0)
+        start_pos = (0, s)
+        seen = set(start_pos)
+        h = deque(maxlen=n*n)
+        h.append(start_pos)
+        while h:
+            steps, s = h.popleft()  # pop from beginning (*)
+            if self._solved(s, n):
+                return steps
+
+            steps += 1
+
+            def push_new(new_s):
+                new_item = (steps, new_s)
+                if not new_s in seen:
+                    h.append(new_item)  # add at end (with (*) above ensures that first solution found is shortest)
+                    seen.add(new_s)
+
+            if self._can_down(s, grid): push_new(self._movedown(s))
+            if self._can_right(s, grid): push_new(self._moveright(s))
+            if self._can_rotate(s, grid): push_new(self._rotate(s))
+            if self._can_rotate_anti(s, grid): push_new(self._rotate_anti(s))
+
+        return -1
+
+class Solution3:
     def _moveright(self, s):
         return snake(tailx=s.tailx + 1, taily=s.taily, headx=s.headx + 1, heady=s.heady)
 
@@ -51,6 +174,7 @@ class Solution:
         return s.tailx == n - 2 and s.heady == s.headx == s.taily == n - 1
 
     def minimumMoves(self, grid: List[List[int]]) -> int:
+        """deque + namedtumple"""
         n = len(grid)  # Note: grid is square
         s = snake(tailx=0, taily=0, heady=0, headx=1)
         start_pos = (0, s)
@@ -465,6 +589,9 @@ if __name__ == "__main__":
         [0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0,
          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]
+
+    with Timer():
+        print(Solution().minimumMoves(grid))
 
     with Timer():
         print(Solution().minimumMoves(grid))
