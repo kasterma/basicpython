@@ -1,6 +1,24 @@
 class Solution:
     def minRemoveToMakeValid(self, s: str) -> str:
-        pass
+        open_idx = []
+        close_idx = []
+        remove_idx = []
+        ct = 0
+        for idx, c in enumerate(s):
+            if c == "(":
+                open_idx.append(idx)
+                ct += 1
+            if c == ")":
+                close_idx.append(idx)
+                if ct == 0:
+                    remove_idx.append(idx)
+                else:
+                    ct -= 1
+
+        for _ in range(ct):
+            remove_idx.append(open_idx.pop())
+
+        return "".join(c for idx, c in enumerate(s) if not idx in remove_idx)
 
 def valid(s):
     ct = 0
@@ -21,6 +39,7 @@ def test_valid():
     assert valid("asdf(sdsds(dssds(sd)dss(sds)dsds)dsds)dsds")
     assert not valid("((")
     assert not valid("(()))")
+
 
 def test1():
     s = "lee(t(c)o)de)"
