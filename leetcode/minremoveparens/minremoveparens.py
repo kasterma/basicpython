@@ -5,7 +5,6 @@ import time
 class Solution:
     def minRemoveToMakeValid(self, s: str) -> str:
         open_idx = []
-        close_idx = []
         remove_idx = []
         ct = 0
         for idx, c in enumerate(s):
@@ -13,14 +12,13 @@ class Solution:
                 open_idx.append(idx)
                 ct += 1
             if c == ")":
-                close_idx.append(idx)
                 if ct == 0:
                     remove_idx.append(idx)
                 else:
                     ct -= 1
 
-        for _ in range(ct):
-            remove_idx.append(open_idx.pop())
+        if ct > 0:
+            remove_idx.extend(open_idx[-ct:])
 
         return "".join(c for idx, c in enumerate(s) if not idx in remove_idx)
 
