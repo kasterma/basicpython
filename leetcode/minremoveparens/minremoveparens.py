@@ -1,3 +1,7 @@
+import random
+import time
+
+
 class Solution:
     def minRemoveToMakeValid(self, s: str) -> str:
         open_idx = []
@@ -19,6 +23,25 @@ class Solution:
             remove_idx.append(open_idx.pop())
 
         return "".join(c for idx, c in enumerate(s) if not idx in remove_idx)
+
+    def minRemoveToMakeValid_others(self, s: str) -> str:
+        # NOT MY SOLUTION; copied here to compare timings
+        # Use a array to save empty
+        a = list(s)
+        b = []
+        for i, c in enumerate(s):
+            if c == '(':
+                b.append(i)
+            elif c == ')':
+                if b:
+                    b.pop()
+                else:
+                    a[i] = ''
+
+        while b:
+            a[b.pop()] = ''
+
+        return ''.join(a)
 
 def valid(s):
     ct = 0
@@ -65,3 +88,19 @@ def test4():
     assert valid(sol)
     assert len(sol) == len("a(b(c)d)")
 
+class Timer:
+    def __enter__(self):
+        self.start = time.monotonic()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print(exc_type)
+        print(f"Took {time.monotonic() - self.start}")
+
+if __name__ == "__main__":
+    s = random.choices(["a", "b", "c", "(", ")"], k=10000)
+
+    with Timer():
+        Solution().minRemoveToMakeValid(s)
+
+    with Timer():
+        Solution().minRemoveToMakeValid_others(s)
