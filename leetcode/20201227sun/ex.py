@@ -1,3 +1,15 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import logging
+import sys
+
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+log.addHandler(handler)
+
 vow = ['a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U']
 
 
@@ -157,12 +169,12 @@ class BinTree:
         cur = rv
         for idx, digit in enumerate(n_str):
             cur._len = n_len - idx
-            print(cur._len)
+            log.debug(cur._len)
             if digit == "0":
-                print("zero")
+                log.debug("zero")
                 cur._zero = cur = BinTree()
             else:
-                print("one")
+                log.debug("one")
                 cur._one = cur = BinTree()
         return rv
 
@@ -246,8 +258,55 @@ def test_maxxor():
     assert s.maximizeXor(nums = [0,1,2,3,4], queries = [[3,1],[1,3],[5,6]]) == [3, 3, 7]
     assert s.maximizeXor(nums = [5,2,4,6,6,3], queries = [[12,4],[8,1],[6,3]]) == [15, -1, 5]
 
+import time
+
+
+class Timer:
+    def __init__(self):
+        self._start = None
+        self._end = None
+
+    def start(self):
+        self._start = time.monotonic()
+
+    def stop(self):
+        self._end = time.monotonic()
+
+    def duration(self):
+        return self._end - self._start
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+
+import gc
 
 if __name__ == "__main__":
-    print("hi")
+    print("Running some different timings related to 4th problem (b/c too slow and not certain where the time goes)")
+    # also practicing some matplotlib
+    xs = range(1, 20_000_000_000, 10_000_000)
+    N = 10_000
+    dat = np.zeros((len(xs), N))
+    t = Timer()
+    gc.set_debug(gc.DEBUG_STATS)
+    gc.disable()
+    print(gc.get_count())
+    with Timer() as tt:
+        for x_idx, x in enumerate(xs):
+            lts = []
+            for idx in range(N):
+                with t:
+                    BinTree.from_int(x)
+                dat[x_idx, idx] = t.duration()
+    print(gc.get_count())
+    gc.collect()
+    plt.plot(xs, dat.mean(axis=1))
+    plt.plot(xs, np.median(dat, axis=1))
+    plt.plot(xs, np.min(dat, axis=1))
+
 
 
