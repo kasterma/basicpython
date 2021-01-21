@@ -1,5 +1,6 @@
 import logging
 import sys
+import collections
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 log = logging.getLogger("ex1")
@@ -13,3 +14,10 @@ class LoggingDict(dict):
 
 l = LoggingDict()
 l[1] = 2
+
+
+class LoggingOD(LoggingDict, collections.OrderedDict):
+    pass
+
+
+LoggingOD.mro()
